@@ -1,0 +1,2431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Turret vs Zombies</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+    :root {
+      --gold: #ffd700;
+      --cell: #1a2e1a;
+      --danger: #2e1a1a;
+      --neon-blue: #00ffff;
+      --purple: #8a2be2;
+      --iron: #b0bec5;
+      --steel: #4fc3f7;
+      --titan: #ffb74d;
+      --core-mini: #ce93d8;
+      --core-boss: #ff5252;
+      --eng: #42a5f5;
+      --fire: #ff6d00;
+      --storm: #aeea00;
+      --cryo: #80deea;
+      --void: #ce93d8;
+      --font: 'Rajdhani', sans-serif;
+      --mono: 'Share Tech Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    body {
+      background: radial-gradient(circle at 30% 20%, #1b1b25, #050505 50%, #0a0a0c);
+      font-family: var(--font);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.06), transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* GAME WRAPPER */
+    #game {
+      width: 100%;
+      max-width: 500px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      z-index: 1;
+      padding: 7px;
+      gap: 4px;
+      overflow: hidden;
+      padding-top: 9px;
+    }
+
+    /* PARTICLES BACKGROUND */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(255, 215, 0, 0.45);
+      border-radius: 50%;
+      animation: float 15s linear infinite;
+    }
+
+    /* TOP BAR */
+    #topBar {
+      width: 100%;
+      padding: 7px 9px;
+      background: linear-gradient(135deg, rgba(10, 10, 15, 0.72), rgba(20, 20, 30, 0.78)) !important;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      flex-shrink: 0;
+    }
+
+    #stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      font-weight: 700;
+      font-size: clamp(10px, 2.1vw, 13px);
+      color: var(--gold);
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+      align-items: center;
+      margin-bottom: 3px;
+    }
+
+    #healthBar {
+      background: #1a1a1a;
+      height: 5px;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid #2a2a2a;
+    }
+
+    #healthFill {
+      height: 100%;
+      background: linear-gradient(to right, #ff2200, #ff6600, #ffaa00);
+      width: 100%;
+      transition: width 0.3s;
+      box-shadow: 0 0 6px rgba(255, 80, 0, 0.4);
+    }
+
+    #waveBarContainer {
+      width: 100%;
+      height: 3px;
+      background: #1a2a1a;
+      border-radius: 2px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    #waveBarFill {
+      height: 100%;
+      background: linear-gradient(to right, #00cc44, #39ff14);
+      box-shadow: 0 0 6px rgba(57, 255, 20, 0.4);
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    #cooldownBar {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 2px;
+      height: 4px;
+      width: 100%;
+      margin-top: 3px;
+    }
+
+    .cseg {
+      background: #181818;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .cfill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(to right, #ff6600, var(--gold));
+      transition: width 0.1s linear;
+    }
+
+    .cfill.fr1 {
+      background: linear-gradient(to right, #ff9900, #ffcc00) !important;
+    }
+
+    .cfill.fr2 {
+      background: linear-gradient(to right, #ff6600, #ffdd00) !important;
+    }
+
+    .cfill.fr3 {
+      background: linear-gradient(to right, #ff3300, #ffaa00, #ffff00) !important;
+    }
+
+    .cfill.fr4 {
+      background: linear-gradient(to right, #ff0000, #ff6600, #ffff00) !important;
+    }
+
+    .cfill.fr5 {
+      background: linear-gradient(to right, #ff00ff, #ff0000, #ff9900) !important;
+    }
+
+    .cfill.fr6 {
+      background: linear-gradient(to right, #00ffff, #00ff66, #aeea00) !important;
+    }
+
+    /* CLASS POWER HUD */
+    #classPowerHUD {
+      display: none;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .cp-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px 2px 4px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.4);
+      font-family: var(--mono);
+      font-size: clamp(8px, 1.6vw, 10px);
+      position: relative;
+      transition: border-color 0.3s, background 0.3s;
+      flex-shrink: 0;
+    }
+
+    .cp-chip.cp-active {
+      animation: cpPulse 0.6s ease-out;
+    }
+
+    @keyframes cpPulse {
+      0% {
+        transform: scale(1.18);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .cp-icon {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .cp-label {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cp-value {
+      font-weight: bold;
+      font-size: 9px;
+      min-width: 14px;
+      text-align: right;
+    }
+
+    /* Ring progress for shot-based abilities */
+    .cp-ring-wrap {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .cp-ring-wrap svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .cp-ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.1);
+      stroke-width: 2;
+    }
+
+    .cp-ring-arc {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.15s linear;
+    }
+
+    .cp-ring-num {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      font-weight: bold;
+      font-family: var(--mono);
+      color: white;
+    }
+
+    /* Per-class colour themes */
+    .cp-fire {
+      border-color: rgba(255, 109, 0, 0.45);
+    }
+
+    .cp-fire .cp-ring-arc {
+      stroke: #ff6d00;
+    }
+
+    .cp-fire .cp-value {
+      color: #ff8c00;
+    }
+
+    .cp-storm {
+      border-color: rgba(174, 234, 0, 0.45);
+    }
+
+    .cp-storm .cp-ring-arc {
+      stroke: #aeea00;
+    }
+
+    .cp-storm .cp-value {
+      color: #ccff33;
+    }
+
+    .cp-cryo {
+      border-color: rgba(128, 222, 234, 0.45);
+    }
+
+    .cp-cryo .cp-ring-arc {
+      stroke: #80deea;
+    }
+
+    .cp-cryo .cp-value {
+      color: #80deea;
+    }
+
+    .cp-void {
+      border-color: rgba(206, 147, 216, 0.45);
+    }
+
+    .cp-void .cp-ring-arc {
+      stroke: #ce93d8;
+    }
+
+    .cp-void .cp-value {
+      color: #ce93d8;
+    }
+
+    /* SCRAP BAR */
+    #scrapBar {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 3px;
+    }
+
+    .scrap-chip {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 1px 5px;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: clamp(8px, 1.7vw, 10px);
+      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s;
+    }
+
+    .sc-iron {
+      background: rgba(176, 190, 197, 0.15);
+      color: var(--iron);
+      border-color: rgba(176, 190, 197, 0.35);
+    }
+
+    .sc-steel {
+      background: rgba(79, 195, 247, 0.12);
+      color: var(--steel);
+      border-color: rgba(79, 195, 247, 0.35);
+    }
+
+    .sc-titan {
+      background: rgba(255, 183, 77, 0.12);
+      color: var(--titan);
+      border-color: rgba(255, 183, 77, 0.35);
+    }
+
+    .sc-core-mini {
+      background: rgba(206, 147, 216, 0.12);
+      color: var(--core-mini);
+      border-color: rgba(206, 147, 216, 0.4);
+    }
+
+    .sc-core-boss {
+      background: rgba(255, 82, 82, 0.12);
+      color: var(--core-boss);
+      border-color: rgba(255, 82, 82, 0.4);
+    }
+
+    .sc-new {
+      animation: scrapPop 0.4s ease-out;
+    }
+
+    .active-class-badge {
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-size: clamp(8px, 1.7vw, 10px);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-left: auto;
+    }
+
+    /* WAVE BADGE */
+    #waveBadge {
+      font-size: clamp(9px, 1.8vw, 11px);
+      font-weight: bold;
+      padding: 1px 6px;
+      border-radius: 5px;
+      border: 1px solid #2a4a2a;
+      background: rgba(0, 40, 20, 0.4);
+      color: var(--gold);
+      margin-top: 3px;
+      display: inline-block;
+      transition: all 0.4s;
+    }
+
+    #waveBadge.boss-next {
+      background: rgba(160, 0, 0, 0.4);
+      border-color: #ff4444;
+      color: #ff9999;
+      animation: badgePulse 0.7s infinite alternate;
+    }
+
+    #waveBadge.mini-next {
+      background: rgba(100, 0, 180, 0.4);
+      border-color: #cc44ff;
+      color: #dd99ff;
+      animation: badgePulse 0.7s infinite alternate;
+    }
+
+    /* COMBO */
+    #comboDisplay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: linear-gradient(45deg, var(--neon-blue), var(--purple));
+      padding: 10px 18px;
+      border-radius: 18px;
+      font-weight: bold;
+      font-size: clamp(15px, 3.8vw, 22px);
+      color: white;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.5);
+      z-index: 100;
+      white-space: nowrap;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+    }
+
+    /* BOARD & CANVAS CONTAINER */
+    #boardWrapper {
+      position: relative;
+      flex: 1;
+      min-height: 250px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #board {
+      display: block;
+      width: 90%;
+      height: 96%;
+      background: linear-gradient(135deg, #0e0e0e, #181818);
+      border-radius: 10px;
+      border: 2px solid #2a2a2a;
+      box-shadow: 0 0 18px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      margin: 0 auto;
+      overflow: visible;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    #board::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.05), transparent),
+        linear-gradient(0deg, transparent, rgba(255, 215, 0, 0.05), transparent);
+      border-radius: 10px;
+      pointer-events: none;
+      animation: boardGlow 4s ease-in-out infinite alternate;
+    }
+
+    #board.boss-mode {
+      border-color: #ff2200 !important;
+      box-shadow: 0 0 30px rgba(255, 30, 0, 0.6), inset 0 0 18px rgba(160, 0, 0, 0.2) !important;
+    }
+
+    #board.fire-mode {
+      border-color: #ff6d00 !important;
+      box-shadow: 0 0 20px rgba(255, 109, 0, 0.4), inset 0 0 12px rgba(180, 50, 0, 0.15) !important;
+    }
+
+    #board.storm-mode {
+      border-color: #aeea00 !important;
+      box-shadow: 0 0 20px rgba(174, 234, 0, 0.35), inset 0 0 12px rgba(100, 180, 0, 0.12) !important;
+    }
+
+    #board.cryo-mode {
+      border-color: #80deea !important;
+      box-shadow: 0 0 20px rgba(128, 222, 234, 0.35), inset 0 0 12px rgba(0, 150, 160, 0.12) !important;
+    }
+
+    #board.void-mode {
+      border-color: #ce93d8 !important;
+      box-shadow: 0 0 20px rgba(206, 147, 216, 0.35), inset 0 0 12px rgba(120, 0, 160, 0.12) !important;
+    }
+
+    .shake {
+      animation: screenShake 0.3s ease-in-out;
+    }
+
+    /* BOSS BARS */
+    #minibossBarContainer {
+      display: none;
+      width: 100%;
+      height: 9px;
+      background: linear-gradient(135deg, #180030, #300060);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 2px solid #8800cc;
+      box-shadow: 0 0 12px rgba(150, 0, 220, 0.35);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    #minibossBarContainer::before {
+      content: '💜 MINIBOSS';
+      position: absolute;
+      top: 50%;
+      left: 6px;
+      transform: translateY(-50%);
+      font-size: 7px;
+      font-weight: bold;
+      color: #dd99ff;
+      z-index: 2;
+    }
+
+    #minibossBarFill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, #8800ff, #dd00ff, #ff44ff);
+      box-shadow: 0 0 8px rgba(180, 0, 255, 0.5);
+      animation: bossBarPulse 1s infinite alternate;
+      transition: width 0.2s;
+    }
+
+    #bossBarContainer {
+      display: none;
+      width: 100%;
+      padding: 4px 7px 5px;
+      background: linear-gradient(135deg, rgba(60, 0, 0, 0.95), rgba(16, 0, 0, 0.98));
+      border-radius: 7px;
+      border: 2px solid #ff2200;
+      box-shadow: 0 0 18px rgba(255, 30, 0, 0.5);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    #bossBarLabel {
+      font-size: 9px;
+      font-weight: bold;
+      color: #ff6666;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #bossBarTrack {
+      width: 100%;
+      height: 12px;
+      background: #1a0000;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    #bossBarFill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, #ff0000, #ff5500, #ffaa00);
+      box-shadow: 0 0 10px rgba(255, 60, 0, 0.5);
+      animation: bossBarPulse 0.8s infinite alternate;
+      transition: width 0.25s;
+    }
+
+    #bossHpText {
+      font-size: 8px;
+      color: #ff9999;
+      margin-top: 1px;
+      text-align: right;
+    }
+
+    /* BOSS ANNOUNCE */
+    #bossAnnounce {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 300;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    #bossAnnounceInner {
+      text-align: center;
+      animation: bossReveal 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .ann-title {
+      font-size: clamp(28px, 7.5vw, 50px);
+      font-weight: 900;
+      color: #ff2200;
+      text-shadow: 0 0 30px rgba(255, 0, 0, 0.9);
+      letter-spacing: 4px;
+      animation: titleFlicker 0.12s infinite alternate;
+    }
+
+    .ann-sub {
+      font-size: clamp(12px, 2.8vw, 18px);
+      color: #ff9966;
+      margin-top: 8px;
+    }
+
+    /* SCREEN FX */
+    #waveFlash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0;
+    }
+
+    #waveFlash.fg {
+      animation: flashGreen 0.5s ease-out forwards;
+    }
+
+    #waveFlash.fr {
+      animation: flashRed 0.7s ease-out forwards;
+    }
+
+    #waveTxt {
+      position: fixed;
+      top: 37%;
+      left: 50%;
+      transform: translateX(-50%) scale(0);
+      font-size: clamp(17px, 4.8vw, 30px);
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 18px rgba(255, 215, 0, 0.8);
+      z-index: 201;
+      pointer-events: none;
+      white-space: nowrap;
+      letter-spacing: 3px;
+    }
+
+    #waveTxt.show {
+      animation: wavePop 1.9s ease-out forwards;
+    }
+
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      background: radial-gradient(ellipse at center, transparent 45%, rgba(255, 0, 0, 0.38) 100%);
+      transition: opacity 0.5s;
+    }
+
+    #vignette.low {
+      opacity: 1;
+      animation: vigPulse 1s ease-in-out infinite alternate;
+    }
+
+    /* CONTROLS */
+    #controls {
+      margin-top: 3px;
+      display: grid;
+      grid-template-columns: 1fr 1.8fr 1fr 1fr 1fr 1.15fr;
+      gap: clamp(4px, 1vw, 6px);
+      width: 100%;
+      flex-shrink: 0;
+      padding: 0 2px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #2a2a2a, #111);
+      color: white;
+      border: 1px solid #444;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+      padding: 0;
+      font-size: clamp(11px, 2.6vw, 15px);
+      height: clamp(36px, 8vw, 48px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+      font-family: var(--font);
+    }
+
+    button:hover:not(:disabled) {
+      filter: brightness(1.3);
+      transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    #controls button:nth-child(2) {
+      background: linear-gradient(135deg, var(--gold), #cc9900);
+      color: black;
+    }
+
+    #shopBtn {
+      width: clamp(26px, 6.5vw, 34px) !important;
+      height: clamp(26px, 6.5vw, 32px) !important;
+      padding: 0 !important;
+      font-size: clamp(10px, 2.5vw, 14px) !important;
+      border-radius: 6px !important;
+      background: linear-gradient(135deg, var(--gold), #cc9900) !important;
+      color: black !important;
+    }
+
+    /* OVERLAYS */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 12, 0.65) !important;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      backdrop-filter: blur(12px) saturate(160%) !important;
+      -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    }
+
+    .panel {
+      background: linear-gradient(135deg, rgba(20, 20, 28, 0.75), rgba(10, 10, 15, 0.85)) !important;
+      padding: clamp(13px, 3.5vw, 22px);
+      border-radius: 18px;
+      width: min(93vw, 350px);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+      animation: scaleIn 0.4s ease;
+      max-height: 88vh;
+      overflow-y: auto;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    .panel h1 {
+      color: var(--gold);
+      margin: 0 0 10px;
+      font-size: clamp(17px, 3.8vw, 24px);
+    }
+
+    .panel h2 {
+      color: #ff4444;
+      margin-top: 0;
+      font-size: clamp(15px, 3.3vw, 21px);
+    }
+
+    .panel h3 {
+      margin-top: 0;
+      color: var(--gold);
+      font-size: clamp(14px, 3.3vw, 19px);
+    }
+
+    .panel p {
+      opacity: 0.75;
+      font-size: clamp(11px, 2.3vw, 14px);
+      margin: 7px 0;
+    }
+
+    /* SHOP TABS */
+    #shopTabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 6px;
+    }
+
+    .shopTab {
+      flex: 1;
+      padding: 5px 3px;
+      border-radius: 6px;
+      font-size: clamp(9px, 2vw, 12px);
+      font-weight: 700;
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.04);
+      color: #888;
+      font-family: var(--font);
+    }
+
+    .shopTab.active {
+      background: rgba(255, 215, 0, 0.15);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .shopTab.class-tab {
+      border-color: #444;
+    }
+
+    .shopTab.fire-tab.active {
+      background: rgba(255, 109, 0, 0.15);
+      border-color: var(--fire);
+      color: var(--fire);
+    }
+
+    .shopTab.storm-tab.active {
+      background: rgba(174, 234, 0, 0.12);
+      border-color: var(--storm);
+      color: var(--storm);
+    }
+
+    .shopTab.cryo-tab.active {
+      background: rgba(128, 222, 234, 0.12);
+      border-color: var(--cryo);
+      color: var(--cryo);
+    }
+
+    .shopTab.void-tab.active {
+      background: rgba(206, 147, 216, 0.15);
+      border-color: var(--void);
+      color: var(--void);
+    }
+
+    .shopTab:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* CLASS PANEL */
+    #classPickSection {
+      display: none;
+    }
+
+    .class-card {
+      background: linear-gradient(135deg, #1c1c22, #252528);
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .class-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .class-card.locked {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .class-card.locked:hover {
+      transform: none;
+    }
+
+    .class-card.fire {
+      border-color: #ff6d00;
+    }
+
+    .class-card.fire:hover {
+      box-shadow: 0 0 16px rgba(255, 109, 0, 0.3);
+    }
+
+    .class-card.storm {
+      border-color: #aeea00;
+    }
+
+    .class-card.storm:hover {
+      box-shadow: 0 0 16px rgba(174, 234, 0, 0.25);
+    }
+
+    .class-card.cryo {
+      border-color: #80deea;
+    }
+
+    .class-card.cryo:hover {
+      box-shadow: 0 0 16px rgba(128, 222, 234, 0.25);
+    }
+
+    .class-card.void {
+      border-color: #ce93d8;
+    }
+
+    .class-card.void:hover {
+      box-shadow: 0 0 16px rgba(206, 147, 216, 0.3);
+    }
+
+    .class-card.tech {
+      border-color: #00e5ff;
+    }
+
+    .class-card.tech:hover {
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+    }
+
+    .class-card.selected {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    .class-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .class-name {
+      font-size: clamp(12px, 2.8vw, 15px);
+      font-weight: 700;
+    }
+
+    .class-req {
+      font-size: clamp(8px, 1.7vw, 10px);
+      opacity: 0.6;
+      margin-left: auto;
+      font-family: var(--mono);
+    }
+
+    .class-desc {
+      font-size: clamp(9px, 1.9vw, 11px);
+      opacity: 0.65;
+      line-height: 1.5;
+    }
+
+    .class-locked-msg {
+      font-size: 9px;
+      color: #ff9999;
+      margin-top: 4px;
+      font-family: var(--mono);
+    }
+
+    #classUpgradeList {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #classPickSection,
+    #classUpgradeSection {
+      min-height: 60px;
+    }
+
+    /* UPGRADE ROWS */
+    #upgradeList {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 3px;
+    }
+
+    #upgradeList::-webkit-scrollbar,
+    #classUpgradeList::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    #upgradeList::-webkit-scrollbar-thumb,
+    #classUpgradeList::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.4);
+      border-radius: 2px;
+    }
+
+    .uRow {
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #1e1e22, #28282e);
+      padding: clamp(7px, 1.8vw, 10px);
+      border-radius: 9px;
+      border: 1px solid #333;
+      transition: all 0.25s;
+      gap: 7px;
+    }
+
+    .uRow:hover {
+      border-color: var(--gold);
+    }
+
+    .uAccent {
+      width: 3px;
+      min-height: 32px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      align-self: stretch;
+    }
+
+    .uInfo {
+      flex-grow: 1;
+      min-width: 0;
+    }
+
+    .uName {
+      font-weight: bold;
+      font-size: clamp(10px, 2.2vw, 12px);
+      margin-bottom: 1px;
+      color: var(--gold);
+    }
+
+    .uDesc {
+      font-size: clamp(8px, 1.6vw, 10px);
+      opacity: 0.5;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .uPrev {
+      min-width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pips {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .pip {
+      width: 6px;
+      height: 3px;
+      background: #333;
+      border-radius: 1px;
+      border: 1px solid #555;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .pip.on {
+      background: linear-gradient(to right, var(--gold), #ffff00);
+      box-shadow: 0 0 4px rgba(255, 215, 0, 0.7);
+      border-color: var(--gold);
+    }
+
+    .bbtn {
+      min-width: 54px !important;
+      height: 30px !important;
+      font-size: clamp(8px, 1.7vw, 10px) !important;
+      padding: 0 3px !important;
+      background: linear-gradient(135deg, #2e7d32, #1b5e20) !important;
+      border: 1px solid #4caf50 !important;
+      color: white !important;
+      white-space: nowrap !important;
+      flex-shrink: 0;
+      border-radius: 7px !important;
+      cursor: pointer !important;
+      font-family: var(--mono) !important;
+    }
+
+    .bbtn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #388e3c, #2e7d32) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .bbtn:disabled {
+      background: linear-gradient(135deg, #222, #1a1a1a) !important;
+      color: #555 !important;
+      cursor: not-allowed !important;
+      border-color: #333 !important;
+    }
+
+    .no-afford {
+      border-color: #cc3300 !important;
+    }
+
+    .class-bbtn-fire {
+      background: linear-gradient(135deg, #bf360c, #7f3700) !important;
+      border-color: #ff6d00 !important;
+    }
+
+    .class-bbtn-storm {
+      background: linear-gradient(135deg, #558b2f, #1b5e20) !important;
+      border-color: #aeea00 !important;
+    }
+
+    .class-bbtn-cryo {
+      background: linear-gradient(135deg, #00696f, #004d5a) !important;
+      border-color: #80deea !important;
+    }
+
+    .class-bbtn-void {
+      background: linear-gradient(135deg, #4a148c, #2d0050) !important;
+      border-color: #ce93d8 !important;
+    }
+
+    .class-bbtn-tech {
+      background: linear-gradient(135deg, #006064, #00363a) !important;
+      border-color: #00e5ff !important;
+    }
+
+    /* SCRAP COST TAGS */
+    .scrap-cost {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 9px;
+      font-family: var(--mono);
+    }
+
+    .sc-tag {
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 8px;
+      font-weight: bold;
+    }
+
+    .sc-tag.iron {
+      background: rgba(176, 190, 197, 0.2);
+      color: var(--iron);
+    }
+
+    .sc-tag.steel {
+      background: rgba(79, 195, 247, 0.15);
+      color: var(--steel);
+    }
+
+    .sc-tag.titan {
+      background: rgba(255, 183, 77, 0.15);
+      color: var(--titan);
+    }
+
+    .sc-tag.core-m {
+      background: rgba(206, 147, 216, 0.15);
+      color: var(--core-mini);
+    }
+
+    .sc-tag.core-b {
+      background: rgba(255, 82, 82, 0.15);
+      color: var(--core-boss);
+    }
+
+    /* KEYFRAMES */
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 1;
+      }
+
+      90% {
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-10vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes boardGlow {
+      0% {
+        opacity: 0.4;
+      }
+
+      100% {
+        opacity: 0.9;
+      }
+    }
+
+    @keyframes dangerPulse {
+      0% {
+        filter: brightness(1);
+      }
+
+      50% {
+        filter: brightness(1.5) saturate(1.4);
+      }
+
+      100% {
+        filter: brightness(1);
+      }
+    }
+
+    @keyframes bossBarPulse {
+      0% {
+        filter: brightness(1);
+      }
+
+      100% {
+        filter: brightness(1.35);
+      }
+    }
+
+    @keyframes scaleIn {
+      0% {
+        transform: scale(0.7);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes screenShake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-5px);
+      }
+
+      75% {
+        transform: translateX(5px);
+      }
+    }
+
+    @keyframes badgePulse {
+      0% {
+        filter: brightness(1);
+      }
+
+      100% {
+        filter: brightness(1.55);
+      }
+    }
+
+    @keyframes bossReveal {
+      0% {
+        transform: scale(0.2) rotate(-12deg);
+        opacity: 0;
+      }
+
+      65% {
+        transform: scale(1.1) rotate(2deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes titleFlicker {
+      0% {
+        text-shadow: 0 0 30px rgba(255, 0, 0, 0.9);
+      }
+
+      100% {
+        text-shadow: 0 0 50px rgba(255, 80, 0, 1);
+      }
+    }
+
+    @keyframes scrapPop {
+      0% {
+        transform: scale(0.7);
+        opacity: 0;
+      }
+
+      50% {
+        transform: scale(1.2);
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* SCI-FI UI BORDER & SCANNER */
+    #board::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border: 1px solid rgba(0, 255, 255, 0.15);
+      border-radius: 12px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .board-corner {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--neon-blue);
+      pointer-events: none;
+      z-index: 3;
+      filter: drop-shadow(0 0 4px var(--neon-blue));
+    }
+
+    .bc-tl {
+      top: -3px;
+      left: -3px;
+      border-right: none;
+      border-bottom: none;
+      border-top-left-radius: 4px;
+    }
+
+    .bc-tr {
+      top: -3px;
+      right: -3px;
+      border-left: none;
+      border-bottom: none;
+      border-top-right-radius: 4px;
+    }
+
+    .bc-bl {
+      bottom: -3px;
+      left: -3px;
+      border-right: none;
+      border-top: none;
+      border-bottom-left-radius: 4px;
+    }
+
+    .bc-br {
+      bottom: -3px;
+      right: -3px;
+      border-left: none;
+      border-top: none;
+      border-bottom-right-radius: 4px;
+    }
+
+    /* ────────────────────────────────────────
+       MAIN MENU STYLES
+    ──────────────────────────────────────── */
+    #mainMenu {
+      z-index: 200;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 255, 255, 0.09), transparent 60%),
+        radial-gradient(circle at 10% 100%, rgba(255, 109, 0, 0.09), transparent 50%),
+        radial-gradient(circle at 90% 90%, rgba(138, 43, 226, 0.09), transparent 50%),
+        rgba(6, 6, 10, 0.94) !important;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px 14px;
+      gap: 0;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow-y: auto;
+    }
+
+    .mm-container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .mm-title {
+      font-size: clamp(18px, 4vw, 24px);
+      font-weight: 900;
+      text-align: center;
+      background: linear-gradient(135deg, #ffd700, #ff9900, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      letter-spacing: 1.5px;
+      margin: 0;
+      filter: drop-shadow(0 0 10px rgba(255, 200, 0, 0.45));
+      animation: titleFlicker 1.4s ease-in-out infinite alternate;
+    }
+
+    .mm-subtitle {
+      text-align: center;
+      font-size: 10px;
+      opacity: 0.5;
+      font-family: var(--mono);
+      margin: 0 0 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .mm-resources {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 2px;
+      flex-wrap: wrap;
+    }
+
+    .mm-res-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid #333;
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 9px;
+      font-family: var(--mono);
+      color: #ccc;
+    }
+
+    .mm-play-btn {
+      width: 100%;
+      min-height: 42px;
+      background: linear-gradient(135deg, #ffd700, #cc8800);
+      color: #000;
+      font-size: 14px;
+      font-weight: 800;
+      font-family: var(--font);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.25), 0 3px 10px rgba(0, 0, 0, 0.5);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .mm-play-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .mm-play-btn small {
+      font-size: 9px;
+      opacity: 0.65;
+      font-family: var(--mono);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+
+    .mm-class-btn {
+      width: 100%;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #444;
+      border-radius: 7px;
+      color: #ccc;
+      font-size: 11px;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .mm-class-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .mm-raids-label {
+      text-align: center;
+      font-size: 9px;
+      opacity: 0.45;
+      font-family: var(--mono);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .mm-raids-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .mm-raid-card {
+      background: rgba(20, 20, 30, 0.9);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mm-raid-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .mm-raid-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .mm-raid-card:hover::before {
+      opacity: 1;
+    }
+
+    .mm-raid-card.fire-card {
+      border-color: rgba(255, 109, 0, 0.4);
+      box-shadow: 0 0 10px rgba(255, 109, 0, 0.08);
+    }
+
+    .mm-raid-card.storm-card {
+      border-color: rgba(174, 234, 0, 0.4);
+      box-shadow: 0 0 10px rgba(174, 234, 0, 0.08);
+    }
+
+    .mm-raid-card.cryo-card {
+      border-color: rgba(128, 222, 234, 0.4);
+      box-shadow: 0 0 10px rgba(128, 222, 234, 0.08);
+    }
+
+    .mm-raid-card.void-card {
+      border-color: rgba(206, 147, 216, 0.4);
+      box-shadow: 0 0 10px rgba(206, 147, 216, 0.08);
+    }
+
+    .mm-raid-card.fire-card:hover {
+      border-color: #ff6d00;
+      box-shadow: 0 3px 15px rgba(255, 109, 0, 0.3);
+    }
+
+    .mm-raid-card.storm-card:hover {
+      border-color: #aeea00;
+      box-shadow: 0 3px 15px rgba(174, 234, 0, 0.3);
+    }
+
+    .mm-raid-card.cryo-card:hover {
+      border-color: #80deea;
+      box-shadow: 0 3px 15px rgba(128, 222, 234, 0.3);
+    }
+
+    .mm-raid-card.void-card:hover {
+      border-color: #ce93d8;
+      box-shadow: 0 3px 15px rgba(206, 147, 216, 0.3);
+    }
+
+    .raid-card-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .raid-card-name {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .fire-card .raid-card-name {
+      color: #ff6d00;
+    }
+
+    .storm-card .raid-card-name {
+      color: #aeea00;
+    }
+
+    .cryo-card .raid-card-name {
+      color: #80deea;
+    }
+
+    .void-card .raid-card-name {
+      color: #ce93d8;
+    }
+
+    .raid-card-shard {
+      font-size: 9px;
+      font-family: var(--mono);
+      opacity: 0.75;
+    }
+
+    .fire-card .raid-card-shard {
+      color: #ff9944;
+    }
+
+    .storm-card .raid-card-shard {
+      color: #ccff44;
+    }
+
+    .cryo-card .raid-card-shard {
+      color: #80deea;
+    }
+
+    .void-card .raid-card-shard {
+      color: #ce93d8;
+    }
+
+    .raid-card-desc {
+      display: none;
+    }
+
+    /* Raid shard chip in HUD */
+    #sc-raid-shard {
+      display: none;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid #555;
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-family: var(--mono);
+      font-weight: bold;
+      animation: scrapPop 0.3s ease;
+    }
+
+    /* ────────────────────────────────────────
+       INVENTORY OVERLAY & UPGRADE CARD STYLES
+       ──────────────────────────────────────── */
+    .inv-panel {
+      width: min(96vw, 440px) !important;
+    }
+
+    .inv-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .inv-section-title {
+      font-size: 10px;
+      font-family: var(--mono);
+      letter-spacing: 1.5px;
+      color: var(--gold);
+      margin-bottom: 8px;
+      opacity: 0.85;
+      font-weight: bold;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 4px;
+    }
+
+    .inv-materials-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .inv-res-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #333;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 2px;
+      transition: all 0.2s;
+    }
+
+    .inv-res-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #555;
+    }
+
+    .inv-res-icon {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .inv-res-label {
+      font-size: 8px;
+      opacity: 0.5;
+      margin-bottom: 1px;
+      text-transform: uppercase;
+      font-family: var(--font);
+    }
+
+    .inv-res-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .inv-class-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .inv-class-row {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid #333;
+      border-left: 3px solid #555;
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .inv-class-name {
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .inv-class-currencies {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .inv-curr-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .inv-upgrades-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .inv-upgrades-list::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .inv-upgrades-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.4);
+      border-radius: 2px;
+    }
+
+    /* DROP TOAST */
+    #dropToast {
+      position: fixed;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: linear-gradient(135deg, rgba(20, 20, 35, 0.96), rgba(10, 10, 20, 0.98));
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--gold);
+      text-align: center;
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+      white-space: nowrap;
+    }
+
+    #dropToast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* RAID LOCK BANNER */
+    #raidLockBanner {
+      display: none;
+      position: fixed;
+      bottom: 25%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 15, 15, 0.95);
+      border: 1px solid rgba(255, 80, 0, 0.6);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #ffaa44;
+      text-align: center;
+      z-index: 160;
+      box-shadow: 0 0 18px rgba(255, 80, 0, 0.25);
+      cursor: pointer;
+      animation: badgePulse 1.5s ease-in-out infinite alternate;
+    }
+
+    /* PERSONAL BEST CHIPS */
+    .mm-best-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+      justify-content: center;
+    }
+
+    .mm-best-chip {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      background: rgba(255, 215, 0, 0.06);
+      font-family: var(--mono);
+      font-size: 8px;
+      color: rgba(255, 215, 0, 0.8);
+    }
+
+    .mm-best-chip span {
+      color: var(--gold);
+      font-weight: bold;
+      font-size: 9px;
+    }
+
+    /* HOW TO PLAY */
+    #howToPlayOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.93);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #howToPlayOverlay.show {
+      display: flex;
+    }
+
+    .htp-panel {
+      background: linear-gradient(135deg, #0e0e1a, #1a1a2e);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 16px;
+      padding: 22px;
+      max-width: 440px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      font-family: var(--font);
+    }
+
+    .htp-panel h2 {
+      color: var(--gold);
+      margin: 0 0 14px;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .htp-section {
+      margin-bottom: 14px;
+    }
+
+    .htp-section h3 {
+      font-size: 13px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 6px;
+    }
+
+    .htp-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #ccc;
+      line-height: 1.4;
+    }
+
+    .htp-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="particles"></div>
+  <div id="vignette"></div>
+  <div id="waveFlash"></div>
+  <div id="waveTxt">WAVE!</div>
+  <div id="bossAnnounce">
+    <div id="bossAnnounceInner">
+      <div class="ann-title">☠ BOSS INCOMING ☠</div>
+      <div class="ann-sub" id="annSub">The Dread Revenant awakens...</div>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="mainMenu" class="overlay" style="display:flex;">
+    <div class="mm-container">
+      <h1 class="mm-title">⚡ TURRET DEFENSE</h1>
+      <p class="mm-subtitle">Class Raid Edition &mdash; v2.0</p>
+
+      <div class="mm-resources">
+        <div class="mm-res-chip" id="mm-core-mini">💜 0 Cores</div>
+        <div class="mm-res-chip" id="mm-core-boss">❤️ 0 Boss Cores</div>
+      </div>
+
+      <!-- Personal Best Records -->
+      <div class="mm-best-row" id="mmBestRow"></div>
+      <div id="mm-endless-best"
+        style="display:none; text-align:center; font-family:var(--mono); color:var(--gold); font-size:12px; font-weight:bold; margin-top:2px; margin-bottom:6px; text-shadow: 0 0 8px rgba(255, 215, 0, 0.45); padding: 4px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px;">
+        🏆 Endless Record: Wave 0
+      </div>
+
+      <!-- Standard Game -->
+      <button class="mm-play-btn" id="btnStandardGame" onclick="startStandardGame()">
+        ⚔ STANDARD BATTLE
+        <small>Waves · Scrap · Boss every 10 waves</small>
+      </button>
+
+      <!-- Endless Game -->
+      <button class="mm-play-btn" id="btnEndlessGame" onclick="startEndlessGame()"
+        style="background: linear-gradient(135deg, #aeea00, #558b2f); color: black; box-shadow: 0 0 20px rgba(174,234,0,0.25), 0 4px 14px rgba(0,0,0,0.5);">
+        🏆 ENDLESS SURVIVAL
+        <small>No Checkpoints · Indefinite Scaling · Mutators every 5 waves</small>
+      </button>
+
+      <!-- Class Manager -->
+      <button class="mm-class-btn" onclick="openClassManager()">📊 CLASS MANAGER — Activate &amp; Upgrade Your
+        Classes</button>
+      <button class="mm-class-btn" onclick="openInventory()" style="border-color:#9999ff;color:#bbbbff;">📦 INVENTORY
+        &amp; UPGRADES — Spend Scrap to Upgrade</button>
+
+      <p class="mm-raids-label">— Class Raids —</p>
+
+      <!-- Raid Cards -->
+      <div class="mm-raids-grid">
+        <div class="mm-raid-card fire-card" onclick="startRaid('fire')">
+          <div class="raid-card-icon">🔥</div>
+          <div class="raid-card-name">INFERNO RAID</div>
+          <div class="raid-card-shard" id="menu-shard-fire">🔥 0 Embers</div>
+          <div class="raid-card-desc">Volcanic hellscape.<br>Earn Embers to upgrade<br>Inferno powers.</div>
+        </div>
+        <div class="mm-raid-card storm-card" onclick="startRaid('storm')">
+          <div class="raid-card-icon">⚡</div>
+          <div class="raid-card-name">STORM RAID</div>
+          <div class="raid-card-shard" id="menu-shard-storm">⚡ 0 Sparks</div>
+          <div class="raid-card-desc">Electrified skies.<br>Earn Sparks to upgrade<br>Storm powers.</div>
+        </div>
+        <div class="mm-raid-card cryo-card" onclick="startRaid('cryo')">
+          <div class="raid-card-icon">❄️</div>
+          <div class="raid-card-name">CRYO RAID</div>
+          <div class="raid-card-shard" id="menu-shard-cryo">❄️ 0 Crystals</div>
+          <div class="raid-card-desc">Frozen tundra.<br>Earn Crystals to upgrade<br>Cryo powers.</div>
+        </div>
+        <div class="mm-raid-card void-card" onclick="startRaid('void')">
+          <div class="raid-card-icon">🌀</div>
+          <div class="raid-card-name">VOID RAID</div>
+          <div class="raid-card-shard" id="menu-shard-void">🌀 0 Void Dust</div>
+          <div class="raid-card-desc">Between realities.<br>Earn Void Dust to upgrade<br>Void powers.</div>
+        </div>
+        <div class="mm-raid-card tech-card" onclick="startRaid('tech')" style="grid-column: span 2; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; padding: 4px 8px;">
+          <div class="raid-card-icon" style="font-size: 20px;">💾</div>
+          <div style="display:flex; flex-direction:column; flex-grow:1; gap:1px;">
+            <div class="raid-card-name" style="color:#00e5ff; font-size:10.5px;">TECH FACTORY RAID</div>
+            <div class="raid-card-shard" id="menu-shard-tech" style="color:#00e5ff; font-size:9px;">💾 0 Data Chips</div>
+            <div class="raid-card-desc" style="font-size: 8px; opacity:0.6; line-height: 1.2;">Automated assembly lines. Earn Data Chips to upgrade Tech powers.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings + How To Play Buttons -->
+      <div style="display:flex;gap:5px;margin-top:2px;">
+        <button onclick="openSettings()"
+          style="flex:1;height:30px;background:linear-gradient(135deg,#2a2a2a,#111);border:1px solid #444;border-radius:8px;font-size:11px;color:#aaa;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:1px;">
+          ⚙️ SETTINGS
+        </button>
+        <button onclick="openHowToPlay()"
+          style="height:30px;width:30px;background:linear-gradient(135deg,#1a2a1a,#0a150a);border:1px solid rgba(57,255,20,0.35);border-radius:8px;font-size:13px;color:#39ff14;font-family:var(--font);cursor:pointer;flex-shrink:0;">
+          ?
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="game">
+    <div id="topBar">
+      <!-- Row 1: Badges, Navigation -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:5px;">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <div id="waveBadge" style="margin-top:0;">🌊 WAVE 1</div>
+          <div id="activeClassBadge" style="display:none;" class="active-class-badge"></div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button id="shopBtn" onclick="openShop()"
+            style="width:24px;height:24px;font-size:11px;border-radius:6px;background:linear-gradient(135deg,var(--gold),#cc9900);border-color:#b8860b;color:black;padding:0;display:flex;align-items:center;justify-content:center;"
+            title="Weapon & Utility Shop">🛒</button>
+          <button id="menuBtn" onclick="goToMainMenu()"
+            style="width:24px;height:24px;font-size:10px;border-radius:6px;background:linear-gradient(135deg,#333,#111);border-color:#555;color:white;padding:0;display:flex;align-items:center;justify-content:center;"
+            title="Main Menu">🏠</button>
+          <button id="settingsBtn" onclick="openSettings()"
+            style="width:24px;height:24px;font-size:11px;border-radius:6px;background:linear-gradient(135deg,#333,#111);border-color:#555;color:white;padding:0;display:flex;align-items:center;justify-content:center;">⚙️</button>
+        </div>
+      </div>
+      
+      <!-- Row 2: Scrap currencies & Active Deployable Quickslot -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;gap:5px;">
+        <div id="scrapBar" style="margin-top:0;display:flex;gap:3px;align-items:center;">
+          <div class="scrap-chip sc-iron" id="sc-iron">🔩 0</div>
+          <div class="scrap-chip sc-steel" id="sc-steel">🔷 0</div>
+          <div class="scrap-chip sc-titan" id="sc-titan">💠 0</div>
+          <div class="scrap-chip" id="sc-metal-core" style="border-color:rgba(153,153,255,0.4);color:#aaaaff;padding:1px 4px;">⚙️ 0</div>
+          <div class="scrap-chip" id="sc-raid-shard" style="display:none;padding:1px 4px;">🔥 0</div>
+        </div>
+        
+        <!-- Interactive Active Utility Quickslot (toggles on click, places with E) -->
+        <div id="activeUtilitySlot" onclick="toggleUtility()" 
+          style="cursor:pointer;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;min-width:92px;height:28px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;"
+          title="Click to Cycle Utility, press E to place in column">
+          <!-- Populated by game.js updateUtilityHUD() -->
+        </div>
+      </div>
+      
+      <!-- Row 3: Horizontal Bars Grid -->
+      <div style="display:grid;grid-template-columns: 2fr 2fr 1fr;gap:6px;align-items:center;margin-bottom:2px;">
+        <div id="healthBar" style="height:5px;">
+          <div id="healthFill"></div>
+        </div>
+        <div id="waveBarContainer" style="height:5px;margin-top:0;">
+          <div id="waveBarFill"></div>
+        </div>
+        <div id="cooldownBar" style="height:5px;margin-top:0;"></div>
+      </div>
+      
+      <!-- Additional Status / Indicators -->
+      <div id="classPowerHUD"></div>
+      <div id="mutatorIndicator"
+        style="display:none; margin-top: 4px; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255, 80, 0, 0.45); background: rgba(255, 80, 0, 0.12); font-family: var(--mono); font-size: clamp(8px, 1.8vw, 11px); color: #ffaa44; text-shadow: 0 0 6px rgba(255, 170, 68, 0.35); text-align: center;">
+      </div>
+    </div>
+    <div id="minibossBarContainer">
+      <div id="minibossBarFill"></div>
+    </div>
+    <div id="bossBarContainer">
+      <div id="bossBarLabel">
+        <span id="bossNameLabel">☠ THE DREAD REVENANT ☠</span>
+        <span id="bossPhaseLabel" style="color:#ffaa88;">PHASE 1</span>
+      </div>
+      <div id="bossBarTrack">
+        <div id="bossBarFill"></div>
+      </div>
+      <div id="bossHpText"></div>
+    </div>
+    <div id="boardWrapper">
+      <div id="comboDisplay">COMBO x0</div>
+      <div id="board">
+        <!-- Corners -->
+        <div class="board-corner bc-tl"></div>
+        <div class="board-corner bc-tr"></div>
+        <div class="board-corner bc-bl"></div>
+        <div class="board-corner bc-br"></div>
+
+        <!-- Canvas Game Grid (500x1000 logical resolution scaled dynamically) -->
+        <canvas id="gameCanvas" width="500" height="1000"></canvas>
+      </div>
+      <div id="gameOver" class="overlay">
+        <div class="panel" style="text-align:center;">
+          <h2>GAME OVER</h2>
+          <p id="finalScore" style="font-size:15px;margin:16px 0;line-height:1.9;"></p>
+          <button onclick="resetGame()"
+            style="width:100%;height:50px;background:linear-gradient(135deg,white,#eee);color:black;font-size:15px;margin-top:8px;font-family:var(--font);">🔄
+            PLAY AGAIN</button>
+          <button onclick="goToMainMenu()"
+            style="width:100%;height:40px;background:linear-gradient(135deg,#1a1a2e,#0f0f1a);color:#aaa;font-size:13px;margin-top:6px;border:1px solid #333;font-family:var(--font);">🏠
+            MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+    <div id="controls">
+      <button onclick="move(-1)">◀</button>
+      <button onclick="shoot()">⚡ FIRE ⚡</button>
+      <button onclick="move(1)">▶</button>
+      <button onclick="reload()">⟳</button>
+      <button onclick="toggleUtility()" style="background:linear-gradient(135deg,#3c3c44,#222);border-color:#555;font-size:12px;">🔄</button>
+      <button id="mobilePlaceBtn" onclick="deployActiveUtility()" style="background:linear-gradient(135deg,#005c66,#002c33);border-color:#00e5ff;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;"></button>
+    </div>
+  </div>
+
+  <!-- SHOP OVERLAY -->
+  <div id="upgradeOverlay" class="overlay">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="margin:0;">🛒 WEAPON SHOP</h3>
+      </div>
+      <div id="shopTabs">
+        <div class="shopTab active" id="tabBasic" onclick="switchTab('basic')">⚙ Basic</div>
+        <div class="shopTab class-tab" id="tabClass" onclick="switchTab('class')">⚔ Class</div>
+        <div class="shopTab" id="tabUtility" onclick="switchTab('utility')">🛠 Utility</div>
+      </div>
+
+      <!-- BASIC UPGRADES -->
+      <div id="basicSection">
+        <div style="font-size:10px;opacity:0.5;margin:0 0 8px;font-family:var(--mono);">Costs: 🔩 Iron · 🔷 Steel · 💠
+          Titanium</div>
+        <div id="upgradeList"></div>
+      </div>
+
+      <!-- CLASS SECTION -->
+      <div id="classSection" style="display:none;">
+        <!-- Pick class -->
+        <div id="classPickSection">
+          <div style="font-size:10px;opacity:0.55;margin:0 0 8px;font-family:var(--mono);">Pick ONE class per run.
+            Requires Cores.</div>
+          <div id="classCards"></div>
+        </div>
+        <!-- Class upgrades (shown after selection) -->
+        <div id="classUpgradeSection" style="display:none;">
+          <div id="classHeader" style="margin-bottom:8px;"></div>
+          <div id="classUpgradeList"></div>
+          <button onclick="showClassPick()"
+            style="width:100%;margin-top:8px;height:30px;background:rgba(255,255,255,0.06);border:1px solid #333;border-radius:7px;font-size:11px;color:#aaa;font-family:var(--font);">←
+            Back to class select</button>
+        </div>
+      </div>
+
+      <!-- UTILITY SECTION -->
+      <div id="utilitySection" style="display:none;">
+        <div style="font-size:10px;opacity:0.55;margin:0 0 8px;font-family:var(--mono);">Purchase defensive structures using Scrap parts. Carry limits: 3 max per item.</div>
+        <div id="utilityList"></div>
+      </div>
+
+      <button id="shopCloseBtn" onclick="closeShop()"
+        style="width:100%;margin-top:12px;height:42px;background:linear-gradient(135deg,#444,#2a2a2a);font-size:14px;padding:0;font-family:var(--font);">←
+        BACK TO BATTLE</button>
+    </div>
+  </div>
+
+  <!-- INVENTORY OVERLAY -->
+  <div id="inventoryOverlay" class="overlay">
+    <div class="panel inv-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;color:var(--gold);font-size:20px;">📦 INVENTORY &amp; UPGRADES</h3>
+      </div>
+
+      <!-- Resource Storage -->
+      <div class="inv-section">
+        <div class="inv-section-title">🔩 BASE MATERIALS</div>
+        <div class="inv-materials-grid">
+          <div class="inv-res-card" title="Iron">
+            <span class="inv-res-icon">🔩</span>
+            <span class="inv-res-label">Iron</span>
+            <span class="inv-res-val" id="inv-iron">0</span>
+          </div>
+          <div class="inv-res-card" title="Steel">
+            <span class="inv-res-icon">🔷</span>
+            <span class="inv-res-label">Steel</span>
+            <span class="inv-res-val" id="inv-steel">0</span>
+          </div>
+          <div class="inv-res-card" title="Titanium">
+            <span class="inv-res-icon">💠</span>
+            <span class="inv-res-label">Titanium</span>
+            <span class="inv-res-val" id="inv-titan">0</span>
+          </div>
+          <div class="inv-res-card" title="Metal Core" style="border-color: rgba(170,170,255,0.35);">
+            <span class="inv-res-icon">⚙️</span>
+            <span class="inv-res-label">Metal Core</span>
+            <span class="inv-res-val" id="inv-metal-core" style="color: #bbbbff;">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-section" style="margin-top:12px;">
+        <div class="inv-section-title">✨ CLASS CURRENCIES</div>
+        <div class="inv-class-list">
+          <!-- Fire -->
+          <div class="inv-class-row" style="border-left-color: var(--fire);">
+            <div class="inv-class-info">
+              <span class="inv-class-name" style="color: var(--fire);">🔥 Inferno</span>
+            </div>
+            <div class="inv-class-currencies">
+              <span class="inv-curr-badge" id="inv-shard-fire" title="Embers">🔥 0</span>
+              <span class="inv-curr-badge" id="inv-broken-fire" title="Broken Cores">💜 0</span>
+              <span class="inv-curr-badge" id="inv-full-fire" title="Full Cores">❤️ 0</span>
+            </div>
+          </div>
+          <!-- Storm -->
+          <div class="inv-class-row" style="border-left-color: var(--storm);">
+            <div class="inv-class-info">
+              <span class="inv-class-name" style="color: var(--storm);">⚡ Storm</span>
+            </div>
+            <div class="inv-class-currencies">
+              <span class="inv-curr-badge" id="inv-shard-storm" title="Sparks">⚡ 0</span>
+              <span class="inv-curr-badge" id="inv-broken-storm" title="Broken Cores">💜 0</span>
+              <span class="inv-curr-badge" id="inv-full-storm" title="Full Cores">❤️ 0</span>
+            </div>
+          </div>
+          <!-- Cryo -->
+          <div class="inv-class-row" style="border-left-color: var(--cryo);">
+            <div class="inv-class-info">
+              <span class="inv-class-name" style="color: var(--cryo);">❄️ Cryo</span>
+            </div>
+            <div class="inv-class-currencies">
+              <span class="inv-curr-badge" id="inv-shard-cryo" title="Crystals">❄️ 0</span>
+              <span class="inv-curr-badge" id="inv-broken-cryo" title="Broken Cores">💜 0</span>
+              <span class="inv-curr-badge" id="inv-full-cryo" title="Full Cores">❤️ 0</span>
+            </div>
+          </div>
+          <!-- Void -->
+          <div class="inv-class-row" style="border-left-color: var(--void);">
+            <div class="inv-class-info">
+              <span class="inv-class-name" style="color: var(--void);">🌀 Void</span>
+            </div>
+            <div class="inv-class-currencies">
+              <span class="inv-curr-badge" id="inv-shard-void" title="Void Dust">🌀 0</span>
+              <span class="inv-curr-badge" id="inv-broken-void" title="Broken Cores">💜 0</span>
+              <span class="inv-curr-badge" id="inv-full-void" title="Full Cores">❤️ 0</span>
+            </div>
+          </div>
+          <!-- Tech -->
+          <div class="inv-class-row" style="border-left-color: #00e5ff;">
+            <div class="inv-class-info">
+              <span class="inv-class-name" style="color: #00e5ff;">🛠️ Tech</span>
+            </div>
+            <div class="inv-class-currencies">
+              <span class="inv-curr-badge" id="inv-shard-tech" title="Data Chips">💾 0</span>
+              <span class="inv-curr-badge" id="inv-broken-tech" title="Broken Cores">💜 0</span>
+              <span class="inv-curr-badge" id="inv-full-tech" title="Full Cores">❤️ 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upgrades -->
+      <div class="inv-section" style="margin-top:12px;">
+        <div class="inv-section-title">🛠️ BASE UPGRADES (PERMANENT)</div>
+        <div id="invUpgradeList" class="inv-upgrades-list"></div>
+      </div>
+
+      <button onclick="closeInventory()"
+        style="width:100%;margin-top:14px;height:42px;background:linear-gradient(135deg,#444,#2a2a2a);font-size:14px;padding:0;font-family:var(--font);">←
+        BACK TO MENU</button>
+    </div>
+  </div>
+
+  <!-- EXIT CONFIRMATION OVERLAY -->
+  <div id="exitConfirmOverlay" class="overlay">
+    <div class="panel" style="text-align:center;">
+      <h2 id="exitConfirmTitle" style="color: var(--gold); margin-top: 0; font-size: 20px; letter-spacing: 1px;">⚠️
+        LEAVING BATTLE</h2>
+      <p id="exitConfirmText" style="font-size:14px; margin: 16px 0; line-height: 1.6; color: #ddd;"></p>
+      <button id="exitConfirmYesBtn" onclick="startExitCountdown()"
+        style="width:100%; height:46px; background:linear-gradient(135deg,#ff3300,#b30000); color:white; font-size:14px; border:1px solid #ff5533; font-family:var(--font); font-weight:bold; margin-bottom:8px; border-radius: 9px; cursor: pointer;">
+        LEAVE BATTLE
+      </button>
+      <button onclick="cancelExit()"
+        style="width:100%; height:40px; background:linear-gradient(135deg,#333,#111); color:#ccc; font-size:13px; border:1px solid #555; font-family:var(--font); border-radius: 9px; cursor: pointer;">
+        CANCEL
+      </button>
+    </div>
+  </div>
+
+  <!-- CHECKPOINT CHOICES OVERLAY -->
+  <div id="checkpointOverlay" class="overlay">
+    <div class="panel" style="text-align:center;">
+      <h2 id="checkpointTitle" style="color: var(--gold); margin-top: 0; font-size: 20px; letter-spacing: 1px;">🌊
+        CHECKPOINT REACHED</h2>
+      <p id="checkpointText" style="font-size:14px; margin: 16px 0; line-height: 1.6; color: #ddd;"></p>
+      <button id="checkpointSaveBtn"
+        style="width:100%; height:46px; background:linear-gradient(135deg,#2e7d32,#1b5e20); color:white; font-size:14px; border:1px solid #4caf50; font-family:var(--font); font-weight:bold; margin-bottom:8px; border-radius: 9px; cursor: pointer;">
+        SECURE 100% & HOME
+      </button>
+      <button id="checkpointContinueBtn"
+        style="width:100%; height:46px; background:linear-gradient(135deg,#ffd700,#b8860b); color:black; font-size:14px; border:1px solid #ffeb3b; font-family:var(--font); font-weight:bold; border-radius: 9px; cursor: pointer;">
+        1.5x BONUS & CONTINUE
+      </button>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN HUD INDICATOR -->
+  <div id="exitCountdownIndicator"
+    style="display:none; position:fixed; top:22%; left:50%; transform:translateX(-50%); background:rgba(255, 0, 0, 0.85); border:2px solid #ff4444; border-radius:10px; padding:10px 24px; font-family:var(--mono); color:white; font-size:22px; font-weight:bold; text-align:center; z-index:150; pointer-events:none; box-shadow:0 0 15px rgba(255,0,0,0.6); animation: badgePulse 0.5s infinite alternate;">
+    ⚠️ ESCAPE IN <span id="exitCountdownTime">3.0</span>s... ⚠️
+  </div>
+
+  <!-- SETTINGS OVERLAY -->
+  <div id="settingsOverlay" class="overlay">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;color:var(--gold);">⚙️ SETTINGS</h3>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:14px;">
+        <!-- Audio Controls -->
+        <div style="background:rgba(255,255,255,0.03);border:1px solid #333;border-radius:9px;padding:10px;">
+          <label
+            style="font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span>🔊 SOUND EFFECTS</span>
+            <input type="checkbox" id="sfxToggle" checked onchange="toggleSFXSetting()"
+              style="cursor:pointer;accent-color:var(--gold);">
+          </label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;opacity:0.6;font-family:var(--mono);">VOLUME</span>
+            <input type="range" id="sfxVolumeSlider" min="0" max="1" step="0.1" value="0.6"
+              oninput="updateSFXVolumeSetting(this.value)" style="flex:1;cursor:pointer;accent-color:var(--gold);">
+            <span id="sfxVolVal"
+              style="font-size:10px;font-family:var(--mono);min-width:24px;text-align:right;">60%</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03);border:1px solid #333;border-radius:9px;padding:10px;">
+          <label
+            style="font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span>🎵 MUSIC TRACK</span>
+            <input type="checkbox" id="musicToggle" onchange="toggleMusicSetting()"
+              style="cursor:pointer;accent-color:var(--gold);">
+          </label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:10px;opacity:0.6;font-family:var(--mono);">VOLUME</span>
+            <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.1" value="0"
+              oninput="updateMusicVolumeSetting(this.value)" style="flex:1;cursor:pointer;accent-color:var(--gold);">
+            <span id="musicVolVal"
+              style="font-size:10px;font-family:var(--mono);min-width:24px;text-align:right;">0%</span>
+          </div>
+        </div>
+
+        <!-- Controls Mode -->
+        <div style="background:rgba(255,255,255,0.03);border:1px solid #333;border-radius:9px;padding:10px;">
+          <label style="font-weight:bold;font-size:13px;display:block;margin-bottom:8px;text-align:left;">🎮 DEVICE
+            INPUT MODE</label>
+          <div style="display:flex;gap:8px;">
+            <button id="modePCBtn" onclick="setControlsMode('pc')"
+              style="flex:1;height:34px;font-size:11px;border-radius:6px;">💻 PC (Keyboard)</button>
+            <button id="modeMobileBtn" onclick="setControlsMode('mobile')"
+              style="flex:1;height:34px;font-size:11px;border-radius:6px;">📱 Mobile (Touch)</button>
+          </div>
+        </div>
+        <!-- Wipe Save -->
+        <div
+          style="background:rgba(255,50,50,0.05);border:1px solid rgba(255,80,80,0.2);border-radius:9px;padding:10px;">
+          <label
+            style="font-weight:bold;font-size:13px;display:block;margin-bottom:8px;text-align:left;color:#ff8888;">⚠️
+            DANGER ZONE</label>
+          <button onclick="wipeSave()"
+            style="width:100%;height:34px;background:linear-gradient(135deg,#440000,#220000);border:1px solid #882222;border-radius:6px;font-size:11px;color:#ff6666;font-family:var(--font);cursor:pointer;letter-spacing:1px;">🗑
+            WIPE ALL SAVE DATA</button>
+        </div>
+      </div>
+
+      <button id="settingsCloseBtn" onclick="closeSettings()"
+        style="width:100%;height:42px;background:linear-gradient(135deg,#444,#2a2a2a);font-size:13px;padding:0;font-family:var(--font);">←
+        BACK TO BATTLE</button>
+    </div>
+  </div>
+
+  <!-- DROP TOAST -->
+  <div id="dropToast"></div>
+
+  <!-- RAID LOCK BANNER -->
+  <div id="raidLockBanner" onclick="this.style.display='none'">⚠️ TAP TO DISMISS</div>
+
+  <!-- HOW TO PLAY OVERLAY -->
+  <div id="howToPlayOverlay">
+    <div class="htp-panel">
+      <h2>📖 HOW TO PLAY</h2>
+      <div class="htp-section">
+        <h3>🎮 Core Loop</h3>
+        <div class="htp-row"><span class="htp-icon">🏠</span><span>Start from the <strong>Main Menu</strong>. Choose
+            Standard Battle or a Class Raid.</span></div>
+        <div class="htp-row"><span class="htp-icon">🎯</span><span>Move your turret left/right and <strong>shoot
+              zombies</strong> before they reach the bottom.</span></div>
+        <div class="htp-row"><span class="htp-icon">🔩</span><span>Killing zombies drops <strong>Scrap</strong> (Iron,
+            Steel, Titanium). Spend it on permanent upgrades.</span></div>
+      </div>
+      <div class="htp-section">
+        <h3>🌊 Waves &amp; Bosses</h3>
+        <div class="htp-row"><span class="htp-icon">🌊</span><span>Every <strong>5 waves</strong> you face a Miniboss.
+            Every <strong>10 waves</strong> a Boss appears.</span></div>
+        <div class="htp-row"><span class="htp-icon">🏆</span><span>Defeating a boss gives you a <strong>checkpoint
+              choice</strong> — save &amp; exit with 100%, or risk continuing for 1.5× resources.</span></div>
+        <div class="htp-row"><span class="htp-icon">💀</span><span>If you die, you only keep <strong>25%</strong> of
+            your run's resources. Wave resets to the start of your current 5-wave block.</span></div>
+      </div>
+      <div class="htp-section">
+        <h3>⚔️ Classes &amp; Raids</h3>
+        <div class="htp-row"><span class="htp-icon">🔥</span><span>Raids earn <strong>Class Shards</strong> and
+            <strong>Cores</strong> unique to that element.</span></div>
+        <div class="htp-row"><span class="htp-icon">🔓</span><span>Spend <strong>3 Broken Cores</strong> or <strong>1
+              Full Core</strong> to unlock a class in the Class Manager.</span></div>
+        <div class="htp-row"><span class="htp-icon">⚡</span><span>With a class active, earn Shards to buy powerful
+            <strong>class upgrades</strong> that add special abilities to every shot.</span></div>
+      </div>
+      <div class="htp-section">
+        <h3>🛡️ Emergency Exit</h3>
+        <div class="htp-row"><span class="htp-icon">🏠</span><span>Tap the <strong>🏠 Home button</strong> mid-battle to
+            start a 3-second escape. Survive and keep <strong>50%</strong> of your run resources.</span></div>
+        <div class="htp-row"><span class="htp-icon">⚙️</span><span>Upgrades bought in the <strong>Inventory</strong> are
+            permanent and carry across all runs.</span></div>
+      </div>
+      <button onclick="closeHowToPlay()"
+        style="width:100%;height:42px;background:linear-gradient(135deg,var(--gold),#cc9900);color:black;font-size:13px;font-weight:bold;font-family:var(--font);border:none;border-radius:9px;cursor:pointer;margin-top:8px;">✅
+        GOT IT — START PLAYING</button>
+    </div>
+  </div>
+
+  <!-- SEQUENTIAL MODULE LOADERS -->
+  <script src="js/config.js?v=10"></script>
+  <script src="js/audio.js?v=10"></script>
+  <script src="js/particles.js?v=10"></script>
+  <script src="js/game.js?v=10"></script>
+</body>
+
+</html>

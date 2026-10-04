@@ -1,0 +1,16 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Editor metadata (keep the project's Chrome launch configuration)
+.idea/
+.vscode/*
+!.vscode/launch.json
